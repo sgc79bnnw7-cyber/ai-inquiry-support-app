@@ -15,3 +15,16 @@ class InquiryRead(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class AIClassificationRead(BaseModel):
+    id: int
+    inquiry_id: int
+    category: str
+    urgency: str
+    reason: str
+    model_name: str
+    prompt_version: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

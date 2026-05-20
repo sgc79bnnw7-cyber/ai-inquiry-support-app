@@ -12,6 +12,17 @@ This phase provides the minimum backend foundation:
 - `GET /health`
 - `POST /inquiries`
 
+## Phase 2
+
+AI classification will use OpenAI API settings from environment variables:
+
+```bash
+OPENAI_API_KEY=your_api_key_here
+OPENAI_MODEL=your_model_name_here
+```
+
+Do not commit a real `.env` file or API key.
+
 ## Files
 
 - `app/main.py`: FastAPI routes
@@ -46,6 +57,8 @@ Set the database URL:
 
 ```bash
 export DATABASE_URL=postgresql+psycopg://app_user:app_password@localhost:5432/ai_inquiry_support
+export OPENAI_API_KEY=your_api_key_here
+export OPENAI_MODEL=your_model_name_here
 ```
 
 Start the API:
@@ -68,4 +81,10 @@ Create an inquiry:
 curl -X POST http://localhost:8000/inquiries \
   -H "Content-Type: application/json" \
   -d '{"body":"問い合わせ本文のサンプルです"}'
+```
+
+Classify an inquiry:
+
+```bash
+curl -X POST http://localhost:8000/inquiries/1/classify
 ```
