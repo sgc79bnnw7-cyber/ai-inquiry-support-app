@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app import models, schemas
@@ -22,6 +23,28 @@ def create_event_log(
     db.commit()
     db.refresh(log)
     return log
+
+
+def get_metrics(db: Session) -> schemas.MetricsResponse:
+    row = db.execute(text("""
+        SELECT
+          COUNT(*) FILTER (WHERE event_type = 'inquiry_created'          AND status = 'success') AS total_inquiries,
+          COUNT(*) FILTER (WHERE event_type = 'classification_completed'                        ) AS classified_count,
+          COUNT(*) FILTER (WHERE event_type = 'classification_completed' AND status = 'success') AS classification_success_count,
+          COUNT(*) FILTER (WHERE event_type = 'classification_completed' AND status = 'error'  ) AS classification_error_count
+        FROM event_logs
+    """)).fetchone()
+
+    classified = row.classified_count
+    rate = round(100.0 * row.classification_success_count / classified, 1) if classified > 0 else 0.0
+
+    return schemas.MetricsResponse(
+        total_inquiries=row.total_inquiries,
+        classified_count=classified,
+        classification_success_count=row.classification_success_count,
+        classification_error_count=row.classification_error_count,
+        classification_success_rate=rate,
+    )
 
 
 def get_inquiry(db: Session, inquiry_id: int) -> models.Inquiry | None:

@@ -28,3 +28,11 @@ class AIClassificationRead(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class MetricsResponse(BaseModel):
+    total_inquiries: int
+    classified_count: int
+    classification_success_count: int
+    classification_error_count: int
+    classification_success_rate: float

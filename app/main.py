@@ -18,6 +18,11 @@ def health(db: Session = Depends(get_db)) -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/metrics", response_model=schemas.MetricsResponse)
+def get_metrics(db: Session = Depends(get_db)) -> schemas.MetricsResponse:
+    return crud.get_metrics(db=db)
+
+
 @app.post("/inquiries", response_model=schemas.InquiryRead, status_code=201)
 def create_inquiry(
     inquiry: schemas.InquiryCreate,
