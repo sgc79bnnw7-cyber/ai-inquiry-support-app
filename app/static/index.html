@@ -104,8 +104,53 @@
     <!-- ⑤-2 問い合わせ一覧カード -->
     <section class="card">
       <h2>4. 問い合わせ一覧</h2>
-      <p class="card-desc">登録済みの問い合わせと対応状況の一覧です。</p>
+      <p class="card-desc">登録済みの問い合わせと対応状況の一覧です。条件で絞り込めます。</p>
+
+      <div class="filter-bar">
+        <div class="filter-item">
+          <label class="filter-label" for="filter-status">ステータス</label>
+          <select id="filter-status" class="filter-select">
+            <option value="">すべて</option>
+            <option value="new">未対応</option>
+            <option value="in_progress">対応中</option>
+            <option value="closed">完了</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label class="filter-label" for="filter-category">カテゴリ</label>
+          <select id="filter-category" class="filter-select">
+            <option value="">すべて</option>
+            <option value="login">login</option>
+            <option value="billing">billing</option>
+            <option value="technical_issue">technical_issue</option>
+            <option value="how_to_use">how_to_use</option>
+            <option value="other">other</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label class="filter-label" for="filter-urgency">緊急度</label>
+          <select id="filter-urgency" class="filter-select">
+            <option value="">すべて</option>
+            <option value="high">high</option>
+            <option value="medium">medium</option>
+            <option value="low">low</option>
+          </select>
+        </div>
+        <div class="filter-item filter-keyword">
+          <label class="filter-label" for="filter-keyword">キーワード</label>
+          <input
+            id="filter-keyword"
+            class="input"
+            type="text"
+            placeholder="本文で検索（例）ログイン"
+          />
+        </div>
+      </div>
+
       <div class="actions">
+        <button id="search-btn" class="btn btn-primary" type="button">
+          検索
+        </button>
         <button id="list-btn" class="btn btn-secondary" type="button">
           一覧を更新
         </button>

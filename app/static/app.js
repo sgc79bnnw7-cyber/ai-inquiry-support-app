@@ -277,14 +277,43 @@ metricsBtn.addEventListener("click", updateMetrics);
 
 // ===== 問い合わせ一覧 =====
 const listBtn = document.getElementById("list-btn");
+const searchBtn = document.getElementById("search-btn");
 const listResult = document.getElementById("list-result");
 const listBody = document.getElementById("list-body");
+
+// 検索・フィルター欄
+const filterStatus = document.getElementById("filter-status");
+const filterCategory = document.getElementById("filter-category");
+const filterUrgency = document.getElementById("filter-urgency");
+const filterKeyword = document.getElementById("filter-keyword");
+
+// 現在適用中の絞り込み条件（空 = 全件）。
+// updateList() はこの条件を使うので、検索後の自動更新でも条件が保たれる。
+let currentFilters = {};
 
 const STATUS_LABELS = {
   new: "未対応",
   in_progress: "対応中",
   closed: "完了",
 };
+
+// 入力欄から絞り込み条件を読み取る（空の項目は含めない）
+function readFilters() {
+  const filters = {};
+  if (filterStatus.value) filters.status = filterStatus.value;
+  if (filterCategory.value) filters.category = filterCategory.value;
+  if (filterUrgency.value) filters.urgency = filterUrgency.value;
+  const keyword = filterKeyword.value.trim();
+  if (keyword) filters.keyword = keyword;
+  return filters;
+}
+
+// 条件を GET /inquiries のURLに変換する（日本語キーワードも自動エンコード）
+function buildInquiriesUrl(filters) {
+  const params = new URLSearchParams(filters);
+  const qs = params.toString();
+  return qs ? `/inquiries?${qs}` : "/inquiries";
+}
 
 // 本文を短く表示する（長文で画面が崩れないように）
 function truncate(text, max) {
@@ -319,8 +348,12 @@ function statusSelectHtml(currentStatus) {
 
 function renderList(items) {
   if (items.length === 0) {
-    listBody.innerHTML =
-      '<tr><td colspan="7" class="list-empty">まだ問い合わせがありません。</td></tr>';
+    // 絞り込み中なら「条件に一致なし」、無条件なら「まだ登録なし」を表示
+    const isFiltering = Object.keys(currentFilters).length > 0;
+    const message = isFiltering
+      ? "条件に一致する問い合わせはありません。"
+      : "まだ問い合わせがありません。";
+    listBody.innerHTML = `<tr><td colspan="7" class="list-empty">${message}</td></tr>`;
     return;
   }
 
@@ -457,7 +490,8 @@ async function updateList() {
   listBtn.textContent = "更新中...";
 
   try {
-    const res = await fetch("/inquiries");
+    // 現在の絞り込み条件を反映したURLで取得する
+    const res = await fetch(buildInquiriesUrl(currentFilters));
     if (!res.ok) {
       showResult(
         listResult,
@@ -482,7 +516,21 @@ async function updateList() {
   }
 }
 
+// 「検索」ボタン: 入力欄の条件を確定して一覧を取得する
+async function searchInquiries() {
+  searchBtn.disabled = true;
+  searchBtn.textContent = "検索中...";
+  try {
+    currentFilters = readFilters();
+    await updateList();
+  } finally {
+    searchBtn.disabled = false;
+    searchBtn.textContent = "検索";
+  }
+}
+
 listBtn.addEventListener("click", updateList);
+searchBtn.addEventListener("click", searchInquiries);
 
 // ページ読み込み時に一度だけ初期表示する
 updateMetrics();
