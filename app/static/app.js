@@ -278,6 +278,7 @@ metricsBtn.addEventListener("click", updateMetrics);
 // ===== 問い合わせ一覧 =====
 const listBtn = document.getElementById("list-btn");
 const searchBtn = document.getElementById("search-btn");
+const resetBtn = document.getElementById("reset-btn");
 const listResult = document.getElementById("list-result");
 const listBody = document.getElementById("list-body");
 
@@ -485,6 +486,7 @@ listBody.addEventListener("click", (event) => {
   changeStatus(button.dataset.id, select.value, button);
 });
 
+// 一覧を取得する。成功したら true、失敗したら false を返す。
 async function updateList() {
   listBtn.disabled = true;
   listBtn.textContent = "更新中...";
@@ -498,11 +500,12 @@ async function updateList() {
         "error",
         `一覧の取得に失敗しました（HTTP ${res.status}）。`
       );
-      return;
+      return false;
     }
     const data = await res.json();
     renderList(data);
     listResult.hidden = true;
+    return true;
   } catch (err) {
     showResult(
       listResult,
@@ -510,6 +513,7 @@ async function updateList() {
       "通信に失敗しました。サーバーが起動しているか確認してください。" +
         detailLine(String(err))
     );
+    return false;
   } finally {
     listBtn.disabled = false;
     listBtn.textContent = "一覧を更新";
@@ -529,8 +533,35 @@ async function searchInquiries() {
   }
 }
 
+// 「条件をリセット」ボタン: 入力欄と条件を空に戻して全件表示する
+async function resetFilters() {
+  resetBtn.disabled = true;
+  resetBtn.textContent = "リセット中...";
+  try {
+    // 入力欄を初期状態（すべて / 空）に戻す
+    filterStatus.value = "";
+    filterCategory.value = "";
+    filterUrgency.value = "";
+    filterKeyword.value = "";
+
+    // 絞り込み条件を空にして全件取得する
+    currentFilters = {};
+    const ok = await updateList();
+
+    // 取得に成功したときだけ、リセット完了メッセージを表示する
+    // （失敗時は updateList() のエラー表示を残す）
+    if (ok) {
+      showResult(listResult, "success", "検索条件をリセットしました。");
+    }
+  } finally {
+    resetBtn.disabled = false;
+    resetBtn.textContent = "条件をリセット";
+  }
+}
+
 listBtn.addEventListener("click", updateList);
 searchBtn.addEventListener("click", searchInquiries);
+resetBtn.addEventListener("click", resetFilters);
 
 // ページ読み込み時に一度だけ初期表示する
 updateMetrics();
