@@ -49,6 +49,10 @@
   - `inquiries.status` カラム追加（手動 ALTER TABLE で反映）
   - `status_changed` イベントログの記録
   - 日本語ダッシュボードUI（一覧テーブル・ステータス変更）
+- **Phase 6** — 検索・フィルター機能: 一覧をステータス / カテゴリ / 緊急度 / キーワードで絞り込み
+  - `GET /inquiries` にクエリパラメータ（`status` / `category` / `urgency` / `keyword`）を追加
+  - キーワードは本文の部分一致（`ILIKE`）、カテゴリ・緊急度は「最新の AI 分類」で絞り込み
+  - UI に検索・フィルター欄と「条件をリセット」ボタンを追加
 
 ## 5. API 一覧
 
@@ -57,13 +61,30 @@
 | GET | `/` | 日本語の簡易ダッシュボードUI |
 | GET | `/health` | DB 疎通確認 |
 | POST | `/inquiries` | 問い合わせを作成 |
-| GET | `/inquiries` | 問い合わせ一覧を取得（最新 AI 分類つき） |
+| GET | `/inquiries` | 問い合わせ一覧を取得（最新 AI 分類つき・絞り込み可） |
 | POST | `/inquiries/{id}/classify` | 問い合わせを AI 分類 |
 | PATCH | `/inquiries/{id}/status` | 対応ステータスを更新 |
 | GET | `/metrics` | イベントログの集計メトリクスを取得 |
 
+`GET /inquiries` は、次の任意クエリパラメータで絞り込めます（すべて省略可。無指定なら全件）。
+
+| パラメータ | 説明 |
+|---|---|
+| `status` | 対応状況で絞り込み（`new` / `in_progress` / `closed`） |
+| `category` | 最新 AI 分類のカテゴリで絞り込み（`login` / `billing` / `technical_issue` / `how_to_use` / `other`） |
+| `urgency` | 最新 AI 分類の緊急度で絞り込み（`high` / `medium` / `low`） |
+| `keyword` | 問い合わせ本文の部分一致検索（大文字小文字を区別しない） |
+
+複数指定すると AND 条件で絞り込まれます（例: `?status=new&category=login`）。
+
 API 仕様は起動後に http://localhost:8000/docs （Swagger UI）で確認できます。
 ブラウザで http://localhost:8000/ を開くと、日本語の簡易管理画面が利用できます。
+ダッシュボードUIでは次の操作ができます。
+
+- 問い合わせの登録・AI 分類の実行
+- 問い合わせ一覧の表示と対応ステータスの変更
+- 一覧の絞り込み（ステータス / カテゴリ / 緊急度 / キーワード）と条件リセット
+- 運用メトリクスの確認
 
 ## 6. DB テーブル概要
 
@@ -198,6 +219,11 @@ curl -X POST http://localhost:8000/inquiries \
 # 問い合わせ一覧を取得（最新 AI 分類つき）
 curl http://localhost:8000/inquiries
 
+# 一覧を絞り込む（検索・フィルター）
+curl "http://localhost:8000/inquiries?status=new"
+curl "http://localhost:8000/inquiries?keyword=ログイン"
+curl "http://localhost:8000/inquiries?category=login&urgency=high"
+
 # 問い合わせを分類（OpenAI 設定が必要）
 curl -X POST http://localhost:8000/inquiries/1/classify
 
@@ -228,6 +254,11 @@ docker compose exec db psql -U app_user -d ai_inquiry_support -c "SELECT * FROM 
 - **手動マイグレーション**: `create_all()` の限界を理解し、`ALTER TABLE` で既存DBにカラムを追加（Alembic が必要になる理由を体験）
 - **最新分類結果の取得**: `DISTINCT ON` を使い「問い合わせごとの最新の AI 分類」を 1 件だけ取得
 - **問い合わせ管理画面の実装**: 一覧表示・ステータス変更ができる日本語の簡易管理画面（HTML/CSS/JS）
+- **動的 WHERE 条件**: 指定された絞り込み条件だけを AND で積み上げてクエリを組み立てる
+- **部分一致検索**: `ILIKE '%keyword%'` による大文字小文字を区別しない本文検索
+- **最新分類へのフィルタリング**: 古い分類で誤ヒットせず、最新の AI 分類に対して絞り込む設計
+- **後方互換な API 拡張**: 既存のレスポンス形式や無指定時の挙動を保ったままパラメータを追加
+- **フィルタ状態管理**: 素の JavaScript で絞り込み条件を一元管理し、更新後も条件を維持する
 - **段階的な開発**: Phase ごとに小さく動く単位で実装を積み上げる進め方
 
 ## ファイル構成
