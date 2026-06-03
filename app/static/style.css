@@ -340,6 +340,34 @@ body {
   color: #94a3b8;
 }
 
+/* ステータス変更操作（select + 更新ボタン） */
+.status-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-select {
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  background: #fff;
+  color: var(--text);
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  background: var(--primary);
+  color: #fff;
+}
+
+.btn-sm:hover {
+  background: var(--primary-hover);
+}
+
 /* ===== フッター ===== */
 .page-footer {
   text-align: center;

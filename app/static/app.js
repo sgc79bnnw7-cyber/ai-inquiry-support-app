@@ -306,10 +306,21 @@ function formatDateTime(iso) {
   });
 }
 
+// ステータス変更用の select を作る（現在の status を選択状態にする）
+function statusSelectHtml(currentStatus) {
+  const options = Object.keys(STATUS_LABELS)
+    .map((value) => {
+      const selected = value === currentStatus ? " selected" : "";
+      return `<option value="${value}"${selected}>${STATUS_LABELS[value]}</option>`;
+    })
+    .join("");
+  return `<select class="status-select">${options}</select>`;
+}
+
 function renderList(items) {
   if (items.length === 0) {
     listBody.innerHTML =
-      '<tr><td colspan="6" class="list-empty">まだ問い合わせがありません。</td></tr>';
+      '<tr><td colspan="7" class="list-empty">まだ問い合わせがありません。</td></tr>';
     return;
   }
 
@@ -338,6 +349,13 @@ function renderList(items) {
               URGENCY_LABELS[item.latest_urgency] || item.latest_urgency
             )}</span>`;
 
+      const actionCell =
+        `<div class="status-action">` +
+        statusSelectHtml(item.status) +
+        `<button class="btn btn-sm status-update-btn" type="button" ` +
+        `data-id="${item.id}">更新</button>` +
+        `</div>`;
+
       return (
         "<tr>" +
         `<td>${item.id}</td>` +
@@ -346,11 +364,93 @@ function renderList(items) {
         `<td>${categoryCell}</td>` +
         `<td>${urgencyCell}</td>` +
         `<td>${formatDateTime(item.created_at)}</td>` +
+        `<td>${actionCell}</td>` +
         "</tr>"
       );
     })
     .join("");
 }
+
+// ステータス更新（行の「更新」ボタンから呼ばれる）
+async function changeStatus(inquiryId, newStatus, button) {
+  button.disabled = true;
+  const originalText = button.textContent;
+  button.textContent = "更新中...";
+
+  try {
+    const res = await fetch(
+      `/inquiries/${encodeURIComponent(inquiryId)}/status`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      }
+    );
+
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (_) {
+      data = null;
+    }
+
+    if (!res.ok) {
+      const detail = data && data.detail ? String(data.detail) : "";
+
+      if (res.status === 404) {
+        showResult(
+          listResult,
+          "error",
+          "指定した問い合わせIDが見つかりません。" +
+            (detail ? detailLine(detail) : "")
+        );
+        return;
+      }
+
+      // 不正な status（400）など
+      showResult(
+        listResult,
+        "error",
+        "ステータスの更新に失敗しました。" + (detail ? detailLine(detail) : "")
+      );
+      return;
+    }
+
+    const statusLabel = STATUS_LABELS[data.status] || data.status;
+    showResult(
+      listResult,
+      "success",
+      `ステータスを更新しました（ID: ${data.id} → ${escapeHtml(statusLabel)}）。`
+    );
+
+    // 更新後は一覧とメトリクスを最新化する
+    await updateList();
+    updateMetrics();
+  } catch (err) {
+    showResult(
+      listResult,
+      "error",
+      "通信に失敗しました。サーバーが起動しているか確認してください。" +
+        detailLine(String(err))
+    );
+  } finally {
+    // updateList() で行が再生成される場合もあるが、
+    // 失敗時に残った同じボタンのために元に戻しておく
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+// 行が再生成されても効くよう、tbody にイベント委譲する
+listBody.addEventListener("click", (event) => {
+  const button = event.target.closest(".status-update-btn");
+  if (!button) {
+    return;
+  }
+  const row = button.closest("tr");
+  const select = row.querySelector(".status-select");
+  changeStatus(button.dataset.id, select.value, button);
+});
 
 async function updateList() {
   listBtn.disabled = true;
