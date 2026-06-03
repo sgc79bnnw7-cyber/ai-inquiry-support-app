@@ -17,6 +17,15 @@ class InquiryRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class InquiryListItem(BaseModel):
+    id: int
+    body: str
+    status: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class AIClassificationRead(BaseModel):
     id: int
     inquiry_id: int

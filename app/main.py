@@ -1,4 +1,8 @@
+from pathlib import Path
+
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -11,6 +15,14 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="ai-inquiry-support-app")
 
+STATIC_DIR = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def index() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
+
 
 @app.get("/health")
 def health(db: Session = Depends(get_db)) -> dict[str, str]:
@@ -21,6 +33,11 @@ def health(db: Session = Depends(get_db)) -> dict[str, str]:
 @app.get("/metrics", response_model=schemas.MetricsResponse)
 def get_metrics(db: Session = Depends(get_db)) -> schemas.MetricsResponse:
     return crud.get_metrics(db=db)
+
+
+@app.get("/inquiries", response_model=list[schemas.InquiryListItem])
+def list_inquiries(db: Session = Depends(get_db)) -> list[models.Inquiry]:
+    return crud.list_inquiries(db=db)
 
 
 @app.post("/inquiries", response_model=schemas.InquiryRead, status_code=201)

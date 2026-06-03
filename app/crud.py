@@ -51,6 +51,14 @@ def get_inquiry(db: Session, inquiry_id: int) -> models.Inquiry | None:
     return db.get(models.Inquiry, inquiry_id)
 
 
+def list_inquiries(db: Session) -> list[models.Inquiry]:
+    return (
+        db.query(models.Inquiry)
+        .order_by(models.Inquiry.id.desc())
+        .all()
+    )
+
+
 def create_inquiry(db: Session, inquiry: schemas.InquiryCreate) -> models.Inquiry:
     db_inquiry = models.Inquiry(body=inquiry.body)
     db.add(db_inquiry)
