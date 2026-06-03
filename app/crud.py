@@ -5,6 +5,25 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 
 
+def create_event_log(
+    db: Session,
+    event_type: str,
+    status: str,
+    inquiry_id: int | None = None,
+    detail: str | None = None,
+) -> models.EventLog:
+    log = models.EventLog(
+        event_type=event_type,
+        inquiry_id=inquiry_id,
+        status=status,
+        detail=detail,
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return log
+
+
 def get_inquiry(db: Session, inquiry_id: int) -> models.Inquiry | None:
     return db.get(models.Inquiry, inquiry_id)
 

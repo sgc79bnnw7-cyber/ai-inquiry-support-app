@@ -23,7 +23,14 @@ def create_inquiry(
     inquiry: schemas.InquiryCreate,
     db: Session = Depends(get_db),
 ) -> models.Inquiry:
-    return crud.create_inquiry(db=db, inquiry=inquiry)
+    db_inquiry = crud.create_inquiry(db=db, inquiry=inquiry)
+    crud.create_event_log(
+        db=db,
+        event_type="inquiry_created",
+        status="success",
+        inquiry_id=db_inquiry.id,
+    )
+    return db_inquiry
 
 
 @app.post(
