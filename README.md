@@ -52,6 +52,8 @@
 | POST | `/inquiries/{id}/classify` | 問い合わせを AI 分類 |
 | GET | `/metrics` | イベントログの集計メトリクスを取得 |
 
+API 仕様は起動後に http://localhost:8000/docs （Swagger UI）で確認できます。
+
 ## 6. DB テーブル概要
 
 ### `inquiries` — 問い合わせ
