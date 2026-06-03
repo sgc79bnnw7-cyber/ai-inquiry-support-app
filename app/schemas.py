@@ -60,6 +60,15 @@ class AIClassificationRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ReplyDraftResponse(BaseModel):
+    inquiry_id: int
+    reply_text: str
+    model_name: str
+    prompt_version: str
+    used_category: str | None = None
+    used_urgency: str | None = None
+
+
 class MetricsResponse(BaseModel):
     total_inquiries: int
     classified_count: int
