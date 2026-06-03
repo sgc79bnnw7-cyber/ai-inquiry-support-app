@@ -62,12 +62,20 @@ def update_inquiry_status(
     return inquiry
 
 
-def list_inquiries(db: Session) -> list[schemas.InquiryListItem]:
-    inquiries = (
-        db.query(models.Inquiry)
-        .order_by(models.Inquiry.id.desc())
-        .all()
-    )
+def list_inquiries(
+    db: Session,
+    *,
+    status: str | None = None,
+    keyword: str | None = None,
+) -> list[schemas.InquiryListItem]:
+    # 指定された条件だけを WHERE に AND で積んでいく（動的クエリ構築）。
+    query = db.query(models.Inquiry)
+    if status:
+        query = query.filter(models.Inquiry.status == status)
+    if keyword:
+        # 本文の部分一致（大文字小文字を区別しない ILIKE）。
+        query = query.filter(models.Inquiry.body.ilike(f"%{keyword}%"))
+    inquiries = query.order_by(models.Inquiry.id.desc()).all()
 
     # 問い合わせごとの「最新の分類」を1件だけ取得する。
     # DISTINCT ON (inquiry_id) は、inquiry_id でグループ化したうえで
