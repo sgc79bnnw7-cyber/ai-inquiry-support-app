@@ -30,6 +30,12 @@ class Inquiry(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     body: Mapped[str] = mapped_column(Text, nullable=False)
+    # 対応状況: new / in_progress / closed（値はアプリ側で検証）
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        server_default="new",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
