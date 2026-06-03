@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI問い合わせサポートアプリ</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="container">
+
+    <!-- ① ヘッダー -->
+    <header class="page-header">
+      <h1>AI問い合わせサポートアプリ</h1>
+      <p class="lead">
+        問い合わせ内容を登録し、AI分類や運用メトリクスを確認できる学習用アプリです。
+      </p>
+    </header>
+
+    <!-- ② 使い方ガイド -->
+    <section class="card guide">
+      <h2>使い方ガイド</h2>
+      <ol class="guide-steps">
+        <li><span class="step-num">1</span>問い合わせを入力する</li>
+        <li><span class="step-num">2</span>「問い合わせを登録」ボタンを押す</li>
+        <li><span class="step-num">3</span>必要なら「AI分類を実行」する</li>
+        <li><span class="step-num">4</span>「メトリクス」で件数や分類状況を確認する</li>
+      </ol>
+    </section>
+
+    <!-- ③ 問い合わせ登録カード -->
+    <section class="card">
+      <h2>1. 問い合わせを登録</h2>
+      <label class="field-label" for="inquiry-body">問い合わせ内容</label>
+      <textarea
+        id="inquiry-body"
+        class="textarea"
+        rows="4"
+        placeholder="例）ログインできません"
+      ></textarea>
+      <div class="actions">
+        <button id="create-btn" class="btn btn-primary" type="button">
+          問い合わせを登録
+        </button>
+      </div>
+      <div id="create-result" class="result" hidden></div>
+    </section>
+
+    <!-- ④ AI分類カード -->
+    <section class="card">
+      <h2>2. AI分類を実行</h2>
+      <label class="field-label" for="classify-id">
+        inquiry_id（問い合わせ番号）
+      </label>
+      <input
+        id="classify-id"
+        class="input"
+        type="number"
+        min="1"
+        placeholder="例）1"
+      />
+      <div class="actions">
+        <button id="classify-btn" class="btn btn-primary" type="button">
+          AI分類を実行
+        </button>
+      </div>
+      <div id="classify-result" class="result" hidden></div>
+    </section>
+
+    <!-- ⑤ メトリクスカード -->
+    <section class="card">
+      <h2>3. メトリクスを確認</h2>
+      <p class="card-desc">現在の利用状況です。「メトリクスを更新」で最新の件数を取得できます。</p>
+      <div class="actions">
+        <button id="metrics-btn" class="btn btn-secondary" type="button">
+          メトリクスを更新
+        </button>
+      </div>
+      <div id="metrics-result" class="result" hidden></div>
+      <div class="metrics-grid">
+        <div class="metric">
+          <div class="metric-label">問い合わせ件数</div>
+          <div class="metric-value" id="m-total">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">分類実行数</div>
+          <div class="metric-value" id="m-classified">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">分類成功数</div>
+          <div class="metric-value" id="m-success">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">分類失敗数</div>
+          <div class="metric-value" id="m-error">-</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">分類成功率</div>
+          <div class="metric-value" id="m-rate">-</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ⑤-2 問い合わせ一覧カード -->
+    <section class="card">
+      <h2>4. 問い合わせ一覧</h2>
+      <p class="card-desc">登録済みの問い合わせと対応状況の一覧です。</p>
+      <div class="actions">
+        <button id="list-btn" class="btn btn-secondary" type="button">
+          一覧を更新
+        </button>
+      </div>
+      <div id="list-result" class="result" hidden></div>
+      <div class="table-wrap">
+        <table class="list-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>本文</th>
+              <th>ステータス</th>
+              <th>最新カテゴリ</th>
+              <th>最新緊急度</th>
+              <th>作成日時</th>
+            </tr>
+          </thead>
+          <tbody id="list-body">
+            <tr><td colspan="6" class="list-empty">読み込み中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ⑥ 補足 -->
+    <footer class="page-footer">
+      <p>
+        API仕様の詳細は
+        <a href="/docs" target="_blank" rel="noopener">Swagger UI（/docs）</a>
+        で確認できます。
+      </p>
+      <p class="note">これは学習用の簡易UIです。認証や本格的なフロントエンドは含みません。</p>
+    </footer>
+
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
