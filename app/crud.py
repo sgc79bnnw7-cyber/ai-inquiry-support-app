@@ -67,8 +67,10 @@ def list_inquiries(
     *,
     status: str | None = None,
     keyword: str | None = None,
+    category: str | None = None,
+    urgency: str | None = None,
 ) -> list[schemas.InquiryListItem]:
-    # 指定された条件だけを WHERE に AND で積んでいく（動的クエリ構築）。
+    # inquiries 本体への条件は WHERE に AND で積んでいく（動的クエリ構築）。
     query = db.query(models.Inquiry)
     if status:
         query = query.filter(models.Inquiry.status == status)
@@ -91,15 +93,25 @@ def list_inquiries(
 
     items: list[schemas.InquiryListItem] = []
     for inquiry in inquiries:
-        category, urgency = latest_by_inquiry.get(inquiry.id, (None, None))
+        latest_category, latest_urgency = latest_by_inquiry.get(
+            inquiry.id, (None, None)
+        )
+
+        # category / urgency は「最新分類」に対して絞り込む（Python フィルタ）。
+        # 指定された場合、最新分類が一致しないもの（未分類の None を含む）は除外する。
+        if category and latest_category != category:
+            continue
+        if urgency and latest_urgency != urgency:
+            continue
+
         items.append(
             schemas.InquiryListItem(
                 id=inquiry.id,
                 body=inquiry.body,
                 status=inquiry.status,
                 created_at=inquiry.created_at,
-                latest_category=category,
-                latest_urgency=urgency,
+                latest_category=latest_category,
+                latest_urgency=latest_urgency,
             )
         )
     return items

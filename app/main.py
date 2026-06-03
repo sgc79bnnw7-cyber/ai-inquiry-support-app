@@ -39,9 +39,17 @@ def get_metrics(db: Session = Depends(get_db)) -> schemas.MetricsResponse:
 def list_inquiries(
     status: str | None = None,
     keyword: str | None = None,
+    category: str | None = None,
+    urgency: str | None = None,
     db: Session = Depends(get_db),
 ) -> list[schemas.InquiryListItem]:
-    return crud.list_inquiries(db=db, status=status, keyword=keyword)
+    return crud.list_inquiries(
+        db=db,
+        status=status,
+        keyword=keyword,
+        category=category,
+        urgency=urgency,
+    )
 
 
 @app.post("/inquiries", response_model=schemas.InquiryRead, status_code=201)
