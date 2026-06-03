@@ -63,8 +63,9 @@ async function createInquiry() {
         `次は「2. AI分類を実行」でこのIDを使って分類できます（IDは自動入力済みです）。`
     );
 
-    // 返ってきた id を AI分類エリアの入力欄に自動入力
+    // 返ってきた id を AI分類エリアと返信案エリアの入力欄に自動入力
     classifyIdInput.value = data.id;
+    replyIdInput.value = data.id;
 
     // 入力欄をクリアして次の入力をしやすくする
     bodyInput.value = "";
@@ -224,6 +225,134 @@ async function classifyInquiry() {
 }
 
 classifyBtn.addEventListener("click", classifyInquiry);
+
+// ===== AI返信案生成 =====
+const replyBtn = document.getElementById("reply-btn");
+const replyIdInput = document.getElementById("reply-id");
+const replyResult = document.getElementById("reply-result");
+
+// カテゴリ/緊急度を日本語ラベル付きで表す（null は「未分類」）
+function labelOrNone(value, labels) {
+  if (value === null || value === undefined) {
+    return '<span class="muted">未分類</span>';
+  }
+  return `${escapeHtml(labels[value] || value)}（${escapeHtml(value)}）`;
+}
+
+async function generateReplyDraft() {
+  const idValue = replyIdInput.value.trim();
+
+  if (idValue === "") {
+    showResult(
+      replyResult,
+      "error",
+      "inquiry_id（問い合わせ番号）を入力してください。"
+    );
+    return;
+  }
+
+  replyBtn.disabled = true;
+  replyBtn.textContent = "生成中...";
+
+  try {
+    const res = await fetch(
+      `/inquiries/${encodeURIComponent(idValue)}/reply-draft`,
+      { method: "POST" }
+    );
+
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (_) {
+      data = null;
+    }
+
+    if (!res.ok) {
+      const detail = data && data.detail ? String(data.detail) : "";
+
+      if (res.status === 404) {
+        showResult(
+          replyResult,
+          "error",
+          "指定した問い合わせIDが見つかりません。" +
+            "<br>先に「1. 問い合わせを登録」で問い合わせを作成してください。"
+        );
+        return;
+      }
+
+      if (detail.includes("OPENAI_API_KEY is not set")) {
+        showResult(
+          replyResult,
+          "error",
+          "OpenAI APIキーが未設定です。" +
+            "<br>.env に OPENAI_API_KEY を設定するとAI返信案を生成できます。" +
+            detailLine(detail)
+        );
+        return;
+      }
+
+      showResult(
+        replyResult,
+        "error",
+        "AI返信案の生成に失敗しました。" + (detail ? detailLine(detail) : "")
+      );
+      return;
+    }
+
+    // 成功表示（返信案はコピーしやすいよう textarea に表示）
+    showResult(
+      replyResult,
+      "success",
+      "AI返信案を生成しました。内容を確認・編集してからご利用ください。<br>" +
+        `<textarea class="reply-textarea" id="reply-text" readonly>${escapeHtml(
+          data.reply_text
+        )}</textarea>` +
+        `<div class="actions"><button class="btn btn-sm" id="reply-copy-btn" type="button">コピー</button></div>` +
+        `<table class="result-table">` +
+        `<tr><th>使用モデル</th><td>${escapeHtml(data.model_name)}</td></tr>` +
+        `<tr><th>プロンプトバージョン</th><td>${escapeHtml(
+          data.prompt_version
+        )}</td></tr>` +
+        `<tr><th>参考カテゴリ</th><td>${labelOrNone(
+          data.used_category,
+          CATEGORY_LABELS
+        )}</td></tr>` +
+        `<tr><th>参考緊急度</th><td>${labelOrNone(
+          data.used_urgency,
+          URGENCY_LABELS
+        )}</td></tr>` +
+        `</table>`
+    );
+
+    // コピーボタンの動作を登録
+    const copyBtn = document.getElementById("reply-copy-btn");
+    const replyTextArea = document.getElementById("reply-text");
+    copyBtn.addEventListener("click", () => {
+      replyTextArea.select();
+      navigator.clipboard
+        .writeText(replyTextArea.value)
+        .then(() => {
+          copyBtn.textContent = "コピーしました";
+          setTimeout(() => (copyBtn.textContent = "コピー"), 1500);
+        })
+        .catch(() => {
+          copyBtn.textContent = "コピーできませんでした";
+        });
+    });
+  } catch (err) {
+    showResult(
+      replyResult,
+      "error",
+      "通信に失敗しました。サーバーが起動しているか確認してください。" +
+        detailLine(String(err))
+    );
+  } finally {
+    replyBtn.disabled = false;
+    replyBtn.textContent = "返信案を生成";
+  }
+}
+
+replyBtn.addEventListener("click", generateReplyDraft);
 
 // ===== メトリクス更新 =====
 const metricsBtn = document.getElementById("metrics-btn");

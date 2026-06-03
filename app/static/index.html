@@ -67,6 +67,31 @@
       <div id="classify-result" class="result" hidden></div>
     </section>
 
+    <!-- ④-2 AI返信案カード -->
+    <section class="card">
+      <h2>2-2. AI返信案を生成</h2>
+      <p class="card-desc">
+        問い合わせ内容（と最新のAI分類）をもとに、返信の下書きを生成します。
+        これは自動送信ではなく、担当者が確認・編集して使う下書きです。
+      </p>
+      <label class="field-label" for="reply-id">
+        inquiry_id（問い合わせ番号）
+      </label>
+      <input
+        id="reply-id"
+        class="input"
+        type="number"
+        min="1"
+        placeholder="例）1"
+      />
+      <div class="actions">
+        <button id="reply-btn" class="btn btn-primary" type="button">
+          返信案を生成
+        </button>
+      </div>
+      <div id="reply-result" class="result" hidden></div>
+    </section>
+
     <!-- ⑤ メトリクスカード -->
     <section class="card">
       <h2>3. メトリクスを確認</h2>
