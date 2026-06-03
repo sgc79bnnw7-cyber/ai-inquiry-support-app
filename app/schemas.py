@@ -17,6 +17,25 @@ class InquiryRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+ALLOWED_STATUSES = ("new", "in_progress", "closed")
+
+
+class InquiryStatusUpdate(BaseModel):
+    # 許可値は new / in_progress / closed。
+    # 不正値も event_logs に記録するため、ここでは str で受けて
+    # エンドポイント側で検証する。
+    status: str = Field(..., min_length=1)
+
+
+class InquiryStatusRead(BaseModel):
+    id: int
+    body: str
+    status: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class InquiryListItem(BaseModel):
     id: int
     body: str

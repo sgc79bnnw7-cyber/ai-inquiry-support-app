@@ -55,6 +55,55 @@ def create_inquiry(
     return db_inquiry
 
 
+@app.patch(
+    "/inquiries/{inquiry_id}/status",
+    response_model=schemas.InquiryStatusRead,
+)
+def update_inquiry_status(
+    inquiry_id: int,
+    payload: schemas.InquiryStatusUpdate,
+    db: Session = Depends(get_db),
+) -> models.Inquiry:
+    inquiry = crud.get_inquiry(db=db, inquiry_id=inquiry_id)
+    if inquiry is None:
+        crud.create_event_log(
+            db=db,
+            event_type="status_changed",
+            status="error",
+            inquiry_id=None,
+            detail=f"Inquiry not found: inquiry_id={inquiry_id}",
+        )
+        raise HTTPException(status_code=404, detail="Inquiry not found.")
+
+    if payload.status not in schemas.ALLOWED_STATUSES:
+        crud.create_event_log(
+            db=db,
+            event_type="status_changed",
+            status="error",
+            inquiry_id=inquiry.id,
+            detail=f"Invalid status: {payload.status}",
+        )
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid status: {payload.status}",
+        )
+
+    old_status = inquiry.status
+    updated = crud.update_inquiry_status(
+        db=db,
+        inquiry=inquiry,
+        new_status=payload.status,
+    )
+    crud.create_event_log(
+        db=db,
+        event_type="status_changed",
+        status="success",
+        inquiry_id=updated.id,
+        detail=f"{old_status} -> {updated.status}",
+    )
+    return updated
+
+
 @app.post(
     "/inquiries/{inquiry_id}/classify",
     response_model=schemas.AIClassificationRead,

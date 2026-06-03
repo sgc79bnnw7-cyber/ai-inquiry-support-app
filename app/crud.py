@@ -51,6 +51,17 @@ def get_inquiry(db: Session, inquiry_id: int) -> models.Inquiry | None:
     return db.get(models.Inquiry, inquiry_id)
 
 
+def update_inquiry_status(
+    db: Session,
+    inquiry: models.Inquiry,
+    new_status: str,
+) -> models.Inquiry:
+    inquiry.status = new_status
+    db.commit()
+    db.refresh(inquiry)
+    return inquiry
+
+
 def list_inquiries(db: Session) -> list[schemas.InquiryListItem]:
     inquiries = (
         db.query(models.Inquiry)
