@@ -22,6 +22,8 @@ class InquiryListItem(BaseModel):
     body: str
     status: str
     created_at: datetime
+    latest_category: str | None = None
+    latest_urgency: str | None = None
 
     model_config = {"from_attributes": True}
 

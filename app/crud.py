@@ -51,12 +51,39 @@ def get_inquiry(db: Session, inquiry_id: int) -> models.Inquiry | None:
     return db.get(models.Inquiry, inquiry_id)
 
 
-def list_inquiries(db: Session) -> list[models.Inquiry]:
-    return (
+def list_inquiries(db: Session) -> list[schemas.InquiryListItem]:
+    inquiries = (
         db.query(models.Inquiry)
         .order_by(models.Inquiry.id.desc())
         .all()
     )
+
+    # 問い合わせごとの「最新の分類」を1件だけ取得する。
+    # DISTINCT ON (inquiry_id) は、inquiry_id でグループ化したうえで
+    # ORDER BY の並びで最初の1行（= id が最大 = 最新の分類）を返す PostgreSQL の機能。
+    rows = db.execute(text("""
+        SELECT DISTINCT ON (inquiry_id) inquiry_id, category, urgency
+        FROM ai_classifications
+        ORDER BY inquiry_id, id DESC
+    """)).fetchall()
+    latest_by_inquiry = {
+        row.inquiry_id: (row.category, row.urgency) for row in rows
+    }
+
+    items: list[schemas.InquiryListItem] = []
+    for inquiry in inquiries:
+        category, urgency = latest_by_inquiry.get(inquiry.id, (None, None))
+        items.append(
+            schemas.InquiryListItem(
+                id=inquiry.id,
+                body=inquiry.body,
+                status=inquiry.status,
+                created_at=inquiry.created_at,
+                latest_category=category,
+                latest_urgency=urgency,
+            )
+        )
+    return items
 
 
 def create_inquiry(db: Session, inquiry: schemas.InquiryCreate) -> models.Inquiry:

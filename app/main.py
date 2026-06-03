@@ -36,7 +36,7 @@ def get_metrics(db: Session = Depends(get_db)) -> schemas.MetricsResponse:
 
 
 @app.get("/inquiries", response_model=list[schemas.InquiryListItem])
-def list_inquiries(db: Session = Depends(get_db)) -> list[models.Inquiry]:
+def list_inquiries(db: Session = Depends(get_db)) -> list[schemas.InquiryListItem]:
     return crud.list_inquiries(db=db)
 
 
