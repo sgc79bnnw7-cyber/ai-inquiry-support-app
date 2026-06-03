@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
 from app.ai_classifier import classify_inquiry_text
+from app.ai_reply import generate_reply_draft
 from app.database import Base, engine, get_db
 
 
@@ -168,4 +169,61 @@ def classify_inquiry(
         raise HTTPException(
             status_code=500,
             detail=f"AI classification failed: {exc}",
+        ) from exc
+
+
+@app.post(
+    "/inquiries/{inquiry_id}/reply-draft",
+    response_model=schemas.ReplyDraftResponse,
+)
+def create_reply_draft(
+    inquiry_id: int,
+    db: Session = Depends(get_db),
+) -> schemas.ReplyDraftResponse:
+    inquiry = crud.get_inquiry(db=db, inquiry_id=inquiry_id)
+    if inquiry is None:
+        crud.create_event_log(
+            db=db,
+            event_type="reply_draft_generated",
+            status="error",
+            inquiry_id=None,
+            detail=f"Inquiry not found: inquiry_id={inquiry_id}",
+        )
+        raise HTTPException(status_code=404, detail="Inquiry not found.")
+
+    # 最新の分類があれば参考にする（無ければ None のまま本文だけで生成）。
+    category, urgency = crud.get_latest_classification(db=db, inquiry_id=inquiry.id)
+
+    try:
+        result = generate_reply_draft(
+            body=inquiry.body,
+            category=category,
+            urgency=urgency,
+        )
+        crud.create_event_log(
+            db=db,
+            event_type="reply_draft_generated",
+            status="success",
+            inquiry_id=inquiry.id,
+            detail=f"category={category}, urgency={urgency}",
+        )
+        return schemas.ReplyDraftResponse(
+            inquiry_id=inquiry.id,
+            reply_text=result["reply_text"],
+            model_name=result["model_name"],
+            prompt_version=result["prompt_version"],
+            used_category=category,
+            used_urgency=urgency,
+        )
+    except Exception as exc:
+        crud.create_event_log(
+            db=db,
+            event_type="reply_draft_generated",
+            status="error",
+            inquiry_id=inquiry.id,
+            detail=str(exc),
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"AI reply draft failed: {exc}",
         ) from exc

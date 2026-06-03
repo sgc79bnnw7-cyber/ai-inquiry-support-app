@@ -51,6 +51,26 @@ def get_inquiry(db: Session, inquiry_id: int) -> models.Inquiry | None:
     return db.get(models.Inquiry, inquiry_id)
 
 
+def get_latest_classification(
+    db: Session,
+    inquiry_id: int,
+) -> tuple[str | None, str | None]:
+    # 指定の問い合わせの「最新の分類」を1件だけ取得する（無ければ None, None）。
+    row = db.execute(
+        text("""
+            SELECT category, urgency
+            FROM ai_classifications
+            WHERE inquiry_id = :inquiry_id
+            ORDER BY id DESC
+            LIMIT 1
+        """),
+        {"inquiry_id": inquiry_id},
+    ).fetchone()
+    if row is None:
+        return (None, None)
+    return (row.category, row.urgency)
+
+
 def update_inquiry_status(
     db: Session,
     inquiry: models.Inquiry,
