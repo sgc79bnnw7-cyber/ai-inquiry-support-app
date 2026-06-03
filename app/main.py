@@ -44,16 +44,44 @@ def classify_inquiry(
 ) -> models.AIClassification:
     inquiry = crud.get_inquiry(db=db, inquiry_id=inquiry_id)
     if inquiry is None:
+        crud.create_event_log(
+            db=db,
+            event_type="classification_requested",
+            status="error",
+            inquiry_id=None,
+            detail=f"Inquiry not found: inquiry_id={inquiry_id}",
+        )
         raise HTTPException(status_code=404, detail="Inquiry not found.")
+
+    crud.create_event_log(
+        db=db,
+        event_type="classification_requested",
+        status="success",
+        inquiry_id=inquiry.id,
+    )
 
     try:
         classification_result = classify_inquiry_text(inquiry.body)
-        return crud.create_ai_classification(
+        result = crud.create_ai_classification(
             db=db,
             inquiry_id=inquiry.id,
             classification_result=classification_result,
         )
+        crud.create_event_log(
+            db=db,
+            event_type="classification_completed",
+            status="success",
+            inquiry_id=inquiry.id,
+        )
+        return result
     except Exception as exc:
+        crud.create_event_log(
+            db=db,
+            event_type="classification_completed",
+            status="error",
+            inquiry_id=inquiry.id,
+            detail=str(exc),
+        )
         raise HTTPException(
             status_code=500,
             detail=f"AI classification failed: {exc}",
